@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultar Staking</title>
+</head>
+<body>
+    <h1>Consulta de Staking</h1>
+    <label for="address"> Wallet:</label>
+    <input type="text" id="walletAddress" placeholder="0x...">
+    <button onclick="consultarStakes()">Consultar Stakes</button>
+
+    <div id="stakesResult"></div>
+
+    <!-- Incluyendo la librería Web3.js -->
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    
+    <script>
+        // Dirección del contrato
+        const contractAddress = "0xAAF3AC68Bf80d995d7793a401653713A05a67B08";
+        
+        // ABI del contrato
+        const contractABI = [{"inputs":[{"internalType":"address","name":"_atomico3Token","type":"address"},{"internalType":"address","name":"_ownerAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[],"name":"atomico3Token","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getAllStakes","outputs":[{"components":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"stakingDays","type":"uint256"},{"internalType":"uint256","name":"startTime","type":"uint256"},{"internalType":"uint256","name":"reward","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"email","type":"string"},{"internalType":"string","name":"document","type":"string"},{"internalType":"bool","name":"active","type":"bool"}],"internalType":"struct Atomico3Staking.Stake[]","name":"","type":"tuple[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getStakers","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"getUserStakes","outputs":[{"components":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"stakingDays","type":"uint256"},{"internalType":"uint256","name":"startTime","type":"uint256"},{"internalType":"uint256","name":"reward","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"email","type":"string"},{"internalType":"string","name":"document","type":"string"},{"internalType":"bool","name":"active","type":"bool"}],"internalType":"struct Atomico3Staking.Stake[]","name":"","type":"tuple[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_stakingDays","type":"uint256"},{"internalType":"string","name":"_name","type":"string"},{"internalType":"string","name":"_email","type":"string"},{"internalType":"string","name":"_document","type":"string"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakers","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakes","outputs":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"stakingDays","type":"uint256"},{"internalType":"uint256","name":"startTime","type":"uint256"},{"internalType":"uint256","name":"reward","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"email","type":"string"},{"internalType":"string","name":"document","type":"string"},{"internalType":"bool","name":"active","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_stakeIndex","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
+        // Conexion metamask
+        async function conectarWeb3() {
+            if (window.ethereum) {
+                try {
+                    await ethereum.request({ method: 'eth_requestAccounts' });
+                    window.web3 = new Web3(window.ethereum);
+                } catch (error) {
+                    console.error("Acceso denegado a MetaMask");
+                }
+            } else {
+                alert("Por favor, instala MetaMask para continuar");
+            }
+        }
+
+        // Función para consultar stakes
+        async function consultarStakes() {
+            await conectarWeb3();
+
+            const walletAddress = document.getElementById("walletAddress").value;
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+            try {
+                const stakes = await contract.methods.getUserStakes(walletAddress).call();
+
+                // REsultados
+                const resultDiv = document.getElementById("stakesResult");
+                resultDiv.innerHTML = `<h3>Stakes para ${walletAddress}</h3>`;
+
+                stakes.forEach((stake, index) => {
+                    resultDiv.innerHTML += `
+                        <p><strong>Stake #${index + 1}:</strong></p>
+                        <ul>
+                            <li>Amount: ${web3.utils.fromWei(stake.amount, 'ether')} Tokens</li>
+                            <li>Staking Days: ${stake.stakingDays}</li>
+                            <li>Start Time: ${new Date(stake.startTime * 1000).toLocaleString()}</li>
+                            <li>Reward: ${web3.utils.fromWei(stake.reward, 'ether')} Tokens</li>
+                            <li>Status: ${stake.active ? "Active" : "Inactive"}</li>
+                        </ul>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error al consultar los stakes", error);
+                alert("Error al consultar los stakes. Verifica que la dirección es correcta.");
+            }
+        }
+    </script>
+</body>
+</html>
